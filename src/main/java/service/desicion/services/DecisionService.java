@@ -2,20 +2,24 @@ package service.desicion.services;
 
 import org.springframework.stereotype.Service;
 import service.desicion.dto.*;
+import service.desicion.entities.Credit;
+import service.desicion.entities.Status;
 import service.desicion.repositories.CreditRepository;
-import service.desicion.services.mapping.CreditMapping;
 
 @Service
 public class DecisionService {
     private final CreditRepository creditRepository;
-    private final CreditMapping creditMapping;
 
-    public DecisionService(CreditRepository creditRepository, CreditMapping creditMapping) {
+    public DecisionService(CreditRepository creditRepository) {
         this.creditRepository = creditRepository;
-        this.creditMapping = creditMapping;
     }
 
     public ScoringResult decision(ScoringInfo scoringInfo) {
+
+        Credit credit = creditRepository.findById(scoringInfo.getCreditId()).orElse(null);
+        if (credit == null) {
+            throw new RuntimeException("Request not found");
+        }
 
         int totalScore = 0;
 
@@ -91,11 +95,14 @@ public class DecisionService {
 
         //Result
         if (totalScore >= 300) {
-            creditRepository.save(creditMapping.toEntity(scoringInfo.getCreditRequest()));
+            credit.setStatus(Status.APPROVE);
+            creditRepository.save(credit);
             return new ScoringResult(true, "Заявка одобрена", totalScore);
         } else if (totalScore >= 200) {
+            credit.setStatus(Status.REJECT);
             return new ScoringResult(false, "На ручной скоринг", totalScore);
         } else {
+            credit.setStatus(Status.REJECT);
             return new ScoringResult(false, "Низкий скоринг", totalScore);
         }
     }

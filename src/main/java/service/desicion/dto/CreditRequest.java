@@ -8,7 +8,7 @@ import java.time.LocalDate;
 @Getter
 @Setter
 public class CreditRequest {
-    private UserInfo userInfo;
+    //private UserInfo userInfo;
 
     private Integer creditAmount;
     private String type;

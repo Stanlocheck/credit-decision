@@ -58,6 +58,6 @@ public class User {
     @Column(name = "inn")
     private String inn;
 
-    @OneToMany
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Credit> credits = new ArrayList<>();
 }

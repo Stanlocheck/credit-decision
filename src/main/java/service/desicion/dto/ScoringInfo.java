@@ -6,7 +6,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ScoringInfo {
-    private CreditRequest creditRequest;
+    private Long creditId;
     private AntifraudResult antifraudResult;
     private BkiResult bkiResult;
     private FsspResult fsspCheckResponse;

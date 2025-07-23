@@ -27,6 +27,8 @@ public class Credit {
     private Integer percent;
     @Column(name = "payment")
     private Integer payment;
+    @Enumerated(EnumType.STRING)
+    private Status status;
 
     @ManyToOne
     @JoinColumn(name = "user_id")

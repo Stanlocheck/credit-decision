@@ -18,7 +18,8 @@ public class Credit {
     @Column(name = "credit_amount")
     private Integer creditAmount;
     @Column(name = "type")
-    private String type;
+    @Enumerated(EnumType.STRING)
+    private Type type;
     @Column(name = "start_date")
     private LocalDate startDate;
     @Column(name = "end_date")
@@ -27,6 +28,10 @@ public class Credit {
     private Integer percent;
     @Column(name = "payment")
     private Integer payment;
+    @Column(name = "currency")
+    @Enumerated(EnumType.STRING)
+    private Currency currency;
+    @Column(name = "status")
     @Enumerated(EnumType.STRING)
     private Status status;
 

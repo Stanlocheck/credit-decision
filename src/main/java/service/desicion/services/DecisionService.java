@@ -1,5 +1,6 @@
 package service.desicion.services;
 
+import jakarta.persistence.criteria.CriteriaBuilder;
 import org.springframework.stereotype.Service;
 import service.desicion.dto.*;
 import service.desicion.entities.Credit;
@@ -14,32 +15,52 @@ public class DecisionService {
         this.creditRepository = creditRepository;
     }
 
-    public ScoringResult decision(ScoringInfo scoringInfo) {
+    public void decision(ScoringInfo scoringInfo) {
 
         Credit credit = creditRepository.findById(scoringInfo.getCreditId()).orElse(null);
         if (credit == null) {
             throw new RuntimeException("Request not found");
         }
 
-        int totalScore = 0;
+        int antifraudResult = checkAntifraud(scoringInfo.getAntifraudResult());
+        if (antifraudResult == 0) {
+            return;
+        }
+        int bkiResult = checkBki(scoringInfo.getBkiResult());
+        int fsspResult = checkFssp(scoringInfo.getFsspCheckResponse());
+        int pdnResult = checkPdn(scoringInfo.getPdnResponse());
+        int mobileOperatorResult = checkMobileOperator(scoringInfo.getMobileOperatorResponse());
 
-        AntifraudResult antifraudResult = scoringInfo.getAntifraudResult();
-        BkiResult bkiResult = scoringInfo.getBkiResult();
-        FsspResult fsspResult = scoringInfo.getFsspCheckResponse();
-        MobileOperatorResult mobileOperatorResult = scoringInfo.getMobileOperatorResponse();
-        PdnResult pdnResult = scoringInfo.getPdnResponse();
+        int totalScore = antifraudResult + bkiResult + fsspResult + pdnResult + mobileOperatorResult;
 
-        //Antifraud
-        if (antifraudResult != null && (antifraudResult.getIsFraud() || antifraudResult.getIsBlackList())) {
-            return new ScoringResult(false, "Подозрение на мошенничество", 0);
+        //Result
+        if (totalScore >= 300) {
+            credit.setStatus(Status.APPROVE);
+            creditRepository.save(credit);
         } else {
-            totalScore += antifraudResult.getFraudScore();
+            credit.setStatus(Status.REJECT);
+            creditRepository.save(credit);
+        }
+    }
+
+    public Integer checkAntifraud(AntifraudResult antifraudResult){
+        int score = 0;
+        if (antifraudResult != null && (antifraudResult.getIsFraud() || antifraudResult.getIsBlackList())) {
+            return score;
+        } else if (antifraudResult.getFraudScore() <= 100){
+            score += antifraudResult.getFraudScore();
+        } else {
+            score += 20;
         }
 
-        //Bki
+        return score;
+    }
+
+    public Integer checkBki(BkiResult bkiResult){
+        int score = 0;
         if(bkiResult != null){
             if(!bkiResult.getHasOverstays()){
-                totalScore += 100;
+                score += 100;
             }
 
             int closedLoans = 0;
@@ -56,54 +77,55 @@ public class DecisionService {
                     }
                 }
             } else {
-                totalScore += 100;
+                score += 100;
             }
 
-            totalScore += Math.min(closedLoans * 10, 50);
+            score += Math.min(closedLoans * 10, 50);
 
             if(openLoans > 3){
-                totalScore -= 20;
+                score -= 20;
             }
         }
 
-        //Fssp
+        return score;
+    }
+
+    public Integer checkFssp(FsspResult fsspResult){
+        int score = 0;
         if(fsspResult != null){
             if(fsspResult.getTotalLoansAmount() < 500000 && fsspResult.getTotalLoansAmount() > 100000){
-                totalScore += 30;
+                score += 30;
             } else if(fsspResult.getTotalLoansAmount() < 100000){
-                totalScore += 60;
+                score += 60;
             } else {
-                totalScore -= 50;
+                score -= 50;
             }
         }
 
-        //Mobile operator
-        if(mobileOperatorResult != null){
-            totalScore += mobileOperatorResult.getScore();
-        }
+        return score;
+    }
 
-        //Pdn
+    public Integer checkPdn(PdnResult pdnResult){
+        int score = 0;
         if(pdnResult != null){
             if(pdnResult.getPdnValue() < 0.3){
-                totalScore += 30;
+                score += 30;
             } else if(pdnResult.getPdnValue() < 0.5){
-                totalScore += 15;
+                score += 15;
             } else {
-                totalScore -= 20;
+                score -= 20;
             }
         }
 
-        //Result
-        if (totalScore >= 300) {
-            credit.setStatus(Status.APPROVE);
-            creditRepository.save(credit);
-            return new ScoringResult(true, "Заявка одобрена", totalScore);
-        } else if (totalScore >= 200) {
-            credit.setStatus(Status.REJECT);
-            return new ScoringResult(false, "На ручной скоринг", totalScore);
-        } else {
-            credit.setStatus(Status.REJECT);
-            return new ScoringResult(false, "Низкий скоринг", totalScore);
+        return score;
+    }
+
+    public Integer checkMobileOperator(MobileOperatorResult mobileOperatorResult){
+        int score = 0;
+        if(mobileOperatorResult != null){
+            score += mobileOperatorResult.getScore();
         }
+
+        return score;
     }
 }

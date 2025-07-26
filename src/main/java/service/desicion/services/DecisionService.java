@@ -1,6 +1,5 @@
 package service.desicion.services;
 
-import jakarta.persistence.criteria.CriteriaBuilder;
 import org.springframework.stereotype.Service;
 import service.desicion.dto.*;
 import service.desicion.entities.Credit;
@@ -24,6 +23,8 @@ public class DecisionService {
 
         int antifraudResult = checkAntifraud(scoringInfo.getAntifraudResult());
         if (antifraudResult == 0) {
+            credit.setStatus(Status.REJECT);
+            creditRepository.save(credit);
             return;
         }
         int bkiResult = checkBki(scoringInfo.getBkiResult());
@@ -43,17 +44,14 @@ public class DecisionService {
         }
     }
 
-    public Integer checkAntifraud(AntifraudResult antifraudResult){
-        int score = 0;
+    public int checkAntifraud(AntifraudResult antifraudResult){
         if (antifraudResult != null && (antifraudResult.getIsFraud() || antifraudResult.getIsBlackList())) {
-            return score;
+            return 0;
         } else if (antifraudResult.getFraudScore() <= 100){
-            score += antifraudResult.getFraudScore();
+            return antifraudResult.getFraudScore();
         } else {
-            score += 20;
+            return 20;
         }
-
-        return score;
     }
 
     public Integer checkBki(BkiResult bkiResult){
@@ -91,41 +89,38 @@ public class DecisionService {
     }
 
     public Integer checkFssp(FsspResult fsspResult){
-        int score = 0;
         if(fsspResult != null){
             if(fsspResult.getTotalLoansAmount() < 500000 && fsspResult.getTotalLoansAmount() > 100000){
-                score += 30;
+                return 30;
             } else if(fsspResult.getTotalLoansAmount() < 100000){
-                score += 60;
+                return 60;
             } else {
-                score -= 50;
+                return -50;
             }
         }
 
-        return score;
+        return 0;
     }
 
     public Integer checkPdn(PdnResult pdnResult){
-        int score = 0;
         if(pdnResult != null){
             if(pdnResult.getPdnValue() < 0.3){
-                score += 30;
+                return 30;
             } else if(pdnResult.getPdnValue() < 0.5){
-                score += 15;
+                return 15;
             } else {
-                score -= 20;
+                return -20;
             }
         }
 
-        return score;
+        return 0;
     }
 
     public Integer checkMobileOperator(MobileOperatorResult mobileOperatorResult){
-        int score = 0;
         if(mobileOperatorResult != null){
-            score += mobileOperatorResult.getScore();
+            return mobileOperatorResult.getScore();
         }
 
-        return score;
+        return 0;
     }
 }

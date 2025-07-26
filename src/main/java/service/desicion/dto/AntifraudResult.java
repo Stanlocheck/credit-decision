@@ -10,5 +10,5 @@ public class AntifraudResult {
     private String firstName;
     private String secondName;
     private Boolean isBlackList;
-    private Long fraudScore;
+    private Integer fraudScore;
 }

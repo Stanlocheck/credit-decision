@@ -34,7 +34,6 @@ public class DecisionService {
 
         int totalScore = antifraudResult + bkiResult + fsspResult + pdnResult + mobileOperatorResult;
 
-        //Result
         if (totalScore >= 300) {
             credit.setStatus(Status.APPROVE);
             creditRepository.save(credit);

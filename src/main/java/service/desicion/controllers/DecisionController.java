@@ -17,7 +17,7 @@ public class DecisionController {
 
     @PostMapping("/result")
     @ResponseStatus(HttpStatus.OK)
-    public void makeDecision(@RequestBody ScoringInfo scoringInfo) {
+    public void getDecision(@RequestBody ScoringInfo scoringInfo) {
         decisionService.decision(scoringInfo);
     }
 }
